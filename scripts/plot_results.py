@@ -1,3 +1,4 @@
+
 import json
 import argparse
 from pathlib import Path
@@ -37,8 +38,10 @@ def group_results(results):
 
     for result in results:
         image = result["image"]
+        filter_name = result.get("filter", "grayscale")
 
         key = (
+            filter_name,
             image["width"],
             image["height"],
             image["channels"]
@@ -104,7 +107,7 @@ def calculate_statistics(records):
     }
 
 
-def plot_execution_time(data, image_size, output_dir):
+def plot_execution_time(data, filter_name, image_size, output_dir):
     threads = data["threads"]
 
     sequential_time = data["sequential_time"] * 1000
@@ -139,7 +142,7 @@ def plot_execution_time(data, image_size, output_dir):
 
     plt.xlabel("Number of Threads")
     plt.ylabel("Execution Time (ms)")
-    plt.title("Grayscale Execution Time")
+    plt.title(f"{filter_name.title()} Execution Time")
 
     plt.xticks(threads)
     plt.grid(True, alpha=0.3)
@@ -147,12 +150,12 @@ def plot_execution_time(data, image_size, output_dir):
 
     plt.tight_layout()
 
-    filename = output_dir / f"execution_time_{image_size}.png"
+    filename = output_dir / f"{filter_name}_execution_time_{image_size}.png"
     plt.savefig(filename, dpi=200)
     plt.close()
 
 
-def plot_speedup(data, image_size, output_dir):
+def plot_speedup(data, filter_name, image_size, output_dir):
     threads = data["threads"]
     speedups = data["speedups"]
 
@@ -175,7 +178,7 @@ def plot_speedup(data, image_size, output_dir):
 
     plt.xlabel("Number of Threads")
     plt.ylabel("Speedup")
-    plt.title("Grayscale Parallel Speedup")
+    plt.title(f"{filter_name.title()} Parallel Speedup")
 
     plt.xticks(threads)
     plt.grid(True, alpha=0.3)
@@ -183,12 +186,12 @@ def plot_speedup(data, image_size, output_dir):
 
     plt.tight_layout()
 
-    filename = output_dir / f"speedup_{image_size}.png"
+    filename = output_dir / f"{filter_name}_speedup_{image_size}.png"
     plt.savefig(filename, dpi=200)
     plt.close()
 
 
-def plot_efficiency(data, image_size, output_dir):
+def plot_efficiency(data, filter_name, image_size, output_dir):
     threads = data["threads"]
     efficiencies = data["efficiencies"]
 
@@ -210,7 +213,7 @@ def plot_efficiency(data, image_size, output_dir):
 
     plt.xlabel("Number of Threads")
     plt.ylabel("Efficiency (%)")
-    plt.title("Grayscale Parallel Efficiency")
+    plt.title(f"{filter_name.title()} Parallel Efficiency")
 
     plt.xticks(threads)
     plt.grid(True, alpha=0.3)
@@ -218,7 +221,7 @@ def plot_efficiency(data, image_size, output_dir):
 
     plt.tight_layout()
 
-    filename = output_dir / f"efficiency_{image_size}.png"
+    filename = output_dir / f"{filter_name}_efficiency_{image_size}.png"
     plt.savefig(filename, dpi=200)
     plt.close()
 
@@ -228,23 +231,24 @@ def generate_charts(results, output_dir):
 
     groups = group_results(results)
 
-    for image, records in groups.items():
-        width, height, channels = image
+    for group, records in groups.items():
+        filter_name, width, height, channels = group
 
         image_size = f"{width}x{height}"
 
         data = calculate_statistics(records)
 
-        plot_execution_time(data, image_size, output_dir)
-        plot_speedup(data, image_size, output_dir)
-        plot_efficiency(data, image_size, output_dir)
+        plot_execution_time(data, filter_name, image_size, output_dir)
+        plot_speedup(data, filter_name, image_size, output_dir)
+        plot_efficiency(data, filter_name, image_size, output_dir)
 
         correct = all(
             record["outputs_identical"]
             for record in records
         )
 
-        print(f"\nImage: {image_size}")
+        print(f"\nFilter: {filter_name.title()}")
+        print(f"Image: {image_size}")
         print(f"Benchmark runs: {len(records)}")
         print(f"Correctness: {'PASS' if correct else 'FAIL'}")
         print(f"Sequential: {data['sequential_time'] * 1000:.4f} ms")
