@@ -83,3 +83,18 @@ resolution of **3648 × 5472**.
 
 ![Grayscale parallel
 efficiency](results/charts/efficiency_3648x5472.png)
+
+## Results and Observations
+
+The benchmark results show that parallel execution significantly reduces grayscale conversion time. Increasing the number of threads from 1 to 4 improves performance considerably, achieving approximately 3.5x speedup.
+
+However, performance does not scale linearly with the number of threads. In particular, execution time increases slightly when moving from 4 to 5 threads. This may be caused by hardware resource limitations, memory bandwidth saturation, or additional thread scheduling overhead.
+
+The efficiency chart also shows that parallel efficiency decreases as more threads are introduced. This is expected because the speedup does not increase proportionally with the number of threads.
+
+The grayscale operation performs relatively little computation per pixel compared to the amount of memory it accesses. Therefore, memory bandwidth can become a limiting factor as the number of threads increases.
+
+Overall, the results demonstrate that adding more threads does not always guarantee better performance. The optimal thread count depends on the workload and the underlying hardware.
+
+# License
+See [here](./LICENSE) for license.
