@@ -8,8 +8,7 @@
 int benchmark_grayscale(const Image* input, Image* sequential_output, Image* parallel_output, int repetitions){
     if(repetitions <= 0) return 0;
 
-    const int thread_counts[] = {1, 2, 4, 8};
-    const int number_of_configs = 4;
+    const int number_of_configs = 8;
     size_t image_size=(size_t)input->width * input->height * input->channels;
     double sequential_time = 0.0;
     double parallel_times[4];
@@ -28,7 +27,7 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
     printf("Sequential average: %.6f seconds\n\n", sequential_time);
     printf("%-12s %-15s %-15s %-15s\n", "Threads", "Time (seconds)", "Speedup", "Efficiency");
     for(int i = 0 ; i < number_of_configs; i++){
-        int threads = thread_counts[i];
+        int threads = i+1;
         omp_set_num_threads(threads);
         grayscale_parallel(input, parallel_output);
         start=omp_get_wtime();
@@ -85,7 +84,7 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
                     "\"efficiency\": %.4f"
                 "}",
                 i == 0 ? "" : ",",
-                thread_counts[i],
+                i+1,
                 parallel_times[i],
                 speedups[i],
                 efficiencies[i]
