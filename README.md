@@ -1,100 +1,128 @@
 # Parallel-Image-Processing
 
-A C project that applies image filters sequentially and in parallel
-using **OpenMP**. It currently implements grayscale conversion and
-benchmarks execution time with different thread counts.
+A C project that applies image-processing filters sequentially and in parallel using **OpenMP**. It currently implements grayscale conversion and binary thresholding, with benchmarks across different thread counts.
 
 ## Features
 
--   Load and save images using `stb_image` and `stb_image_write`.
--   Apply grayscale conversion sequentially and in parallel.
--   Benchmark thread counts from 1 to 8.
--   Measure execution time, speedup, and parallel efficiency.
--   Check that sequential and parallel outputs are identical.
--   Save benchmark results in JSONL format.
+- Load and save images using `stb_image` and `stb_image_write`.
+- Apply grayscale conversion sequentially and in parallel.
+- Apply binary thresholding sequentially and in parallel.
+- Benchmark thread counts from 1 to 8.
+- Measure execution time, speedup, and parallel efficiency.
+- Verify that sequential and parallel outputs are identical.
+- Save benchmark results in JSONL format.
+- Generate performance charts using Python.
 
 ## Project Structure
 
-``` text
+```text
 .
-├── include/       # Header files and stb libraries
-├── src/           # C source files
-├── images/        # Input images and processed outputs
+├── images/
+│   ├── output/              # Processed images
+│   └── image1.jpg           # Input image
+├── include/                 # Header files and stb libraries
 ├── results/
-│   ├── charts/    # Generated benchmark charts
+│   ├── charts/              # Generated benchmark charts
 │   └── benchmark_results.jsonl
-├── scripts/       # Python plotting script
-└── build/         # Compiled executable
+├── scripts/
+│   └── plot_results.py      # Benchmark visualization
+├── src/                     # C source files
+├── LICENSE
+├── README.md
+├── requirements.txt
+└── tree.txt
 ```
-> Generated using [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git)
+
+Generated using [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git).
 
 ## Compile
 
 Run these commands from the project root:
 
-``` powershell
+```powershell
 New-Item -ItemType Directory -Force build
+
 gcc -std=c11 -Wall -Wextra -O2 -fopenmp -Iinclude `
     src/main.c src/image.c src/filters.c src/benchmark.c src/stb_impl.c `
     -o build/image_processor.exe
 ```
 
-## Run the Benchmark
+## Run
 
-Make sure the output and results directories exist, then run:
+The program accepts an input image, output path, filter name, and an optional threshold value.
 
-``` powershell
-New-Item -ItemType Directory -Force images/output, results
-.\build\image_processor.exe images/image1.jpg images/output/grayscale_benchmark.png
+**Grayscale conversion:**
+
+```powershell
+.\build\image_processor.exe images/image1.jpg images/output/grayscale.png grayscale
 ```
 
-The program runs the sequential version and then the parallel version
-with **1 to 8 threads**. It checks the outputs and appends the
-measurements to:
+**Binary thresholding (default threshold: 128):**
 
-``` text
+```powershell
+.\build\image_processor.exe images/image1.jpg images/output/threshold.png threshold
+```
+
+**Binary thresholding with a custom threshold:**
+
+```powershell
+.\build\image_processor.exe images/image1.jpg images/output/threshold_180.png threshold 180
+```
+
+The threshold value must be an integer between 0 and 255.
+
+For each filter, the program benchmarks the sequential implementation and then the parallel implementation using **1 to 8 threads**. It checks the outputs and appends the measurements to:
+
+```text
 results/benchmark_results.jsonl
 ```
 
 ## Generate Charts
 
-After running the benchmark, generate the charts with:
+Install the required Python packages:
 
-``` powershell
+```powershell
+pip install -r requirements.txt
+```
+
+Generate the benchmark charts:
+
+```powershell
 python scripts/plot_results.py
 ```
 
-The charts are saved in `results/charts/`.
+The charts are saved in `results/charts/`, with separate charts for each filter.
 
 ## Example Results
 
-The following charts show one benchmark run on an image with a
-resolution of **3648 × 5472**.
+The following charts show benchmark results for an image with a resolution of **3648 × 5472**.
 
-### Execution Time
+### Grayscale
 
-![Grayscale execution time](results/charts/execution_time_3648x5472.png)
+<div align="center">
+  <img src="results/charts/grayscale_execution_time_3648x5472.png" width="75%" alt="Grayscale execution time">
+  <p><em>Execution time of sequential and parallel grayscale conversion across different thread counts.</em></p>
 
-### Speedup
+  <img src="results/charts/grayscale_speedup_3648x5472.png" width="75%" alt="Grayscale speedup">
+  <p><em>Speedup achieved by parallel grayscale conversion compared to the sequential implementation.</em></p>
 
-![Grayscale speedup](results/charts/speedup_3648x5472.png)
+  <img src="results/charts/grayscale_efficiency_3648x5472.png" width="75%" alt="Grayscale parallel efficiency">
+  <p><em>Parallel efficiency across different thread counts.</em></p>
+</div>
 
-### Parallel Efficiency
+### Binary Thresholding
 
-![Grayscale parallel
-efficiency](results/charts/efficiency_3648x5472.png)
+<div align="center">
+  <img src="results/charts/threshold_execution_time_3648x5472.png" width="75%" alt="Threshold execution time">
+  <p><em>Execution time of sequential and parallel binary thresholding across different thread counts.</em></p>
 
-## Results and Observations
+  <img src="results/charts/threshold_speedup_3648x5472.png" width="75%" alt="Threshold speedup">
+  <p><em>Speedup achieved by parallel thresholding compared to the sequential implementation.</em></p>
 
-The benchmark results show that parallel execution significantly reduces grayscale conversion time. Increasing the number of threads from 1 to 4 improves performance considerably, achieving approximately 3.5x speedup.
+  <img src="results/charts/threshold_efficiency_3648x5472.png" width="75%" alt="Threshold parallel efficiency">
+  <p><em>Parallel efficiency across different thread counts.</em></p>
+</div>
 
-However, performance does not scale linearly with the number of threads. In particular, execution time increases slightly when moving from 4 to 5 threads. This may be caused by hardware resource limitations, memory bandwidth saturation, or additional thread scheduling overhead.
+## License
 
-The efficiency chart also shows that parallel efficiency decreases as more threads are introduced. This is expected because the speedup does not increase proportionally with the number of threads.
-
-The grayscale operation performs relatively little computation per pixel compared to the amount of memory it accesses. Therefore, memory bandwidth can become a limiting factor as the number of threads increases.
-
-Overall, the results demonstrate that adding more threads does not always guarantee better performance. The optimal thread count depends on the workload and the underlying hardware.
-
-# License
-See [here](./LICENSE) for license.
+See [LICENSE](./LICENSE) for license information.
