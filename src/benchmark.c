@@ -11,9 +11,9 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
     const int number_of_configs = 8;
     size_t image_size=(size_t)input->width * input->height * input->channels;
     double sequential_time = 0.0;
-    double parallel_times[4];
-    double speedups[4];
-    double efficiencies[4];
+    double parallel_times[8];
+    double speedups[8];
+    double efficiencies[8];
     omp_set_dynamic(0);
     printf("\n========== Grayscale Benchmark ==========\n");
     printf("Image size: %d x %d\n", input->width, input->height);
