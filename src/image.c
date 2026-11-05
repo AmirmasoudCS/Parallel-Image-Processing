@@ -26,7 +26,7 @@ int image_save_png(const Image* image, const char* filename){
     return 1;
 }
 
-void free_image(Image* image){
+void image_free(Image* image){
     if(image->pixels!= NULL){
         stbi_image_free(image->pixels);
         image->pixels=NULL;
