@@ -26,3 +26,12 @@ int image_save_png(const Image* image, const char* filename){
     return 1;
 }
 
+void free_image(Image* image){
+    if(image->pixels!= NULL){
+        stbi_image_free(image->pixels);
+        image->pixels=NULL;
+    }
+    image->width=0;
+    image->height=0;
+    image->channels=0;
+}
