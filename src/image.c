@@ -15,3 +15,14 @@ int image_load(Image* image, const char* filename){
     printf("Image loaded successfully!\nWidth: %d\nHeight: %d\nOriginal Channels: %d\nProcessing Channels: %d\n", image->width, image->height, original_channels, image->channels);
     return 1;
 }
+
+int image_save_png(const Image* image, const char* filename){
+    int result = stbi_write_png(filename, image->width, image->height, image->channels, image->pixels, image->width * image->channels);
+    if(!result){
+        printf("Failed to save the image: %s\n", filename);
+        return 0;
+    }
+    printf("Image saved: %s\n", filename);
+    return 1;
+}
+
