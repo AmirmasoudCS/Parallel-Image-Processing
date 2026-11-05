@@ -61,7 +61,7 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
                 "\"width\": %d,"
                 "\"height\": %d,"
                 "\"channels\": %d,"
-                "\"total_pixels\": %zu"
+                "\"total_pixels\": %llu"
             "},"
             "\"repetitions\": %d,"
             "\"sequential_time\": %.9f,"
@@ -70,7 +70,7 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
             input->width,
             input->height,
             input->channels,
-            (size_t)input->width * input->height,
+            (unsigned long long)input->width * input->height,
             repetitions,
             sequential_time
         );
