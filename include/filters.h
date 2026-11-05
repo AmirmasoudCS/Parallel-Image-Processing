@@ -3,6 +3,6 @@
 
 #include "image.h"
 
-void grayscale_sequential(const Image* input, Image* output);
+int grayscale_sequential(const Image* input, Image* output);
 
 #endif
