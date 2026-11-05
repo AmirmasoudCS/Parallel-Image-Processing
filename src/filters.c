@@ -30,3 +30,51 @@ int grayscale_parallel(const Image* input, Image* output){
     }
     return 1;
 }
+
+
+int threshold_sequential(const Image* input, Image* output, int threshold){
+    if(threshold < 0 || threshold > 255) return 0;
+
+    int total_pixels = input->width * input->height;
+
+    for(int i = 0; i < total_pixels; i++){
+        int index = i * input->channels;
+
+        unsigned char r = input->pixels[index];
+        unsigned char g = input->pixels[index+1];
+        unsigned char b = input->pixels[index+2];
+
+        unsigned char gray = (unsigned char)(0.299*r + 0.587*g + 0.114*b);
+        unsigned char binary = gray >= threshold ? 255 : 0;
+
+        output->pixels[index] = binary;
+        output->pixels[index+1] = binary;
+        output->pixels[index+2] = binary;
+    }
+
+    return 1;
+}
+
+int threshold_parallel(const Image* input, Image* output, int threshold){
+    if(threshold < 0 || threshold > 255) return 0;
+
+    int total_pixels = input->width * input->height;
+
+    #pragma omp parallel for schedule(static)
+    for(int i = 0; i < total_pixels; i++){
+        int index = i * input->channels;
+
+        unsigned char r = input->pixels[index];
+        unsigned char g = input->pixels[index+1];
+        unsigned char b = input->pixels[index+2];
+
+        unsigned char gray = (unsigned char)(0.299*r + 0.587*g + 0.114*b);
+        unsigned char binary = gray >= threshold ? 255 : 0;
+
+        output->pixels[index] = binary;
+        output->pixels[index+1] = binary;
+        output->pixels[index+2] = binary;
+    }
+
+    return 1;
+}
