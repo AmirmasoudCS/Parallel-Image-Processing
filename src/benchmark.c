@@ -8,17 +8,19 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
     const int thread_counts[] = {1, 2, 4, 8};
     const int number_of_configs = 4;
     size_t image_size=(size_t)input->width * input->height * input->channels;
-    double start, end;
     double sequential_time = 0.0;
+    double parallel_times[4];
+    double speedups[4];
+    double efficiencies[4];
     omp_set_dynamic(0);
     printf("\n========== Grayscale Benchmark ==========\n");
     printf("Image size: %d x %d\n", input->width, input->height);
     printf("Repetitions: %d\n\n", repetitions);
 
     grayscale_sequential(input, sequential_output);
-    start=omp_get_wtime();
+    double start=omp_get_wtime();
     for(int i = 0 ; i < repetitions ; i++) grayscale_sequential(input, sequential_output);
-    end = omp_get_wtime();
+    double end = omp_get_wtime();
     sequential_time = (end-start)/repetitions;
     printf("Sequential average: %.6f seconds\n\n", sequential_time);
     printf("%-12s %-15s %-15s %-15s\n", "Threads", "Time (seconds)", "Speedup", "Efficiency");
@@ -45,6 +47,63 @@ int benchmark_grayscale(const Image* input, Image* sequential_output, Image* par
     else{
         printf("FAIL: Sequential and parallel outputs differ!\n");
     }
+
+    FILE* file = fopen("results/benchmark_results.jsonl", "a");
+    if(file==NULL)printf("Failed to open benchmark results file!\n");
+    else{
+        time_t timestamp = time(NULL);
+        fprintf(file,
+            "{"
+            "\"timestamp\": %lld,"
+            "\"image\": {"
+                "\"width\": %d,"
+                "\"height\": %d,"
+                "\"channels\": %d,"
+                "\"total_pixels\": %zu"
+            "},"
+            "\"repetitions\": %d,"
+            "\"sequential_time\": %.9f,"
+            "\"parallel_results\": [",
+            (long long)timestamp,
+            input->width,
+            input->height,
+            input->channels,
+            (size_t)input->width * input->height,
+            repetitions,
+            sequential_time
+        );
+
+        for(int i = 0; i < number_of_configs; i++){
+
+            fprintf(file,
+                "%s{"
+                    "\"threads\": %d,"
+                    "\"time\": %.9f,"
+                    "\"speedup\": %.4f,"
+                    "\"efficiency\": %.4f"
+                "}",
+                i == 0 ? "" : ",",
+                thread_counts[i],
+                parallel_times[i],
+                speedups[i],
+                efficiencies[i]
+            );
+        }
+
+        fprintf(file,
+            "],"
+            "\"outputs_identical\": %s"
+            "}\n",
+            correct ? "true" : "false"
+        );
+
+        fclose(file);
+
+        printf("Benchmark results saved successfully!\n");
+    }
+
+    }
+
     printf("=======================================\n");
 
     return correct;
