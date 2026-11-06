@@ -189,6 +189,8 @@ static int benchmark_filter(
     double speedups[8];
     double efficiencies[8];
 
+    double total_sequential_time = 0.0;
+
     int sequential_threshold = -1;
     int parallel_threshold = -1;
     int thresholds_identical = 1;
@@ -199,16 +201,72 @@ static int benchmark_filter(
     printf("Image size: %d x %d\n", input->width, input->height);
     printf("Repetitions: %d\n\n", repetitions);
 
-    if(!sequential_filter(input, sequential_output, parameter, &sequential_threshold)) return 0;
+    for(int i = 0; i < number_of_configs; i++){
+        int threads = i+1;
 
-    double start = omp_get_wtime();
+        double config_sequential_time = 0.0;
+        double config_parallel_time = 0.0;
 
-    for(int i = 0; i < repetitions; i++){
-        if(!sequential_filter(input, sequential_output, parameter, &sequential_threshold)) return 0;
+        omp_set_num_threads(threads);
+
+        // Warmup runs. Alternate their order between configurations.
+        if(i % 2 == 0){
+            if(!sequential_filter(input, sequential_output, parameter, &sequential_threshold)) return 0;
+            if(!parallel_filter(input, parallel_output, parameter, &parallel_threshold)) return 0;
+        }
+        else{
+            if(!parallel_filter(input, parallel_output, parameter, &parallel_threshold)) return 0;
+            if(!sequential_filter(input, sequential_output, parameter, &sequential_threshold)) return 0;
+        }
+
+        // Alternate the measurement order on every repetition.
+        for(int j = 0; j < repetitions; j++){
+            double start;
+            double end;
+
+            if(j % 2 == 0){
+                start = omp_get_wtime();
+
+                if(!sequential_filter(input, sequential_output, parameter, &sequential_threshold)) return 0;
+
+                end = omp_get_wtime();
+                config_sequential_time += end-start;
+
+                start = omp_get_wtime();
+
+                if(!parallel_filter(input, parallel_output, parameter, &parallel_threshold)) return 0;
+
+                end = omp_get_wtime();
+                config_parallel_time += end-start;
+            }
+            else{
+                start = omp_get_wtime();
+
+                if(!parallel_filter(input, parallel_output, parameter, &parallel_threshold)) return 0;
+
+                end = omp_get_wtime();
+                config_parallel_time += end-start;
+
+                start = omp_get_wtime();
+
+                if(!sequential_filter(input, sequential_output, parameter, &sequential_threshold)) return 0;
+
+                end = omp_get_wtime();
+                config_sequential_time += end-start;
+            }
+
+            if(strcmp(filter_name, "otsu") == 0 &&
+               parallel_threshold != sequential_threshold){
+                thresholds_identical = 0;
+            }
+        }
+
+        parallel_times[i] = config_parallel_time / repetitions;
+        total_sequential_time += config_sequential_time;
     }
 
-    double end = omp_get_wtime();
-    sequential_time = (end-start)/repetitions;
+    // Average sequential time across all configurations.
+    sequential_time = total_sequential_time / (number_of_configs * repetitions);
 
     printf("Sequential average: %.6f seconds\n", sequential_time);
 
@@ -221,26 +279,8 @@ static int benchmark_filter(
     for(int i = 0; i < number_of_configs; i++){
         int threads = i+1;
 
-        omp_set_num_threads(threads);
-
-        if(!parallel_filter(input, parallel_output, parameter, &parallel_threshold)) return 0;
-
-        start = omp_get_wtime();
-
-        for(int j = 0; j < repetitions; j++){
-            if(!parallel_filter(input, parallel_output, parameter, &parallel_threshold)) return 0;
-        }
-
-        end = omp_get_wtime();
-
-        parallel_times[i] = (end-start)/repetitions;
         speedups[i] = sequential_time / parallel_times[i];
-        efficiencies[i] = speedups[i]/threads * 100.0;
-
-        if(strcmp(filter_name, "otsu") == 0 &&
-           parallel_threshold != sequential_threshold){
-            thresholds_identical = 0;
-        }
+        efficiencies[i] = speedups[i] / threads * 100.0;
 
         printf("%-12d %-15.6f %-15.2fx %-14.2f%%\n",
             threads,
