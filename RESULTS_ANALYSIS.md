@@ -20,13 +20,15 @@ All operations were tested on the same RGB image:
 
 The reported execution times are averages over 10 repetitions. Speedup is calculated as
 
-\[S(p) = \frac{T_{\text{sequential}}}{T_{\text{parallel}}(p)}\]
+$$
+S(p) = \frac{T_{\text{sequential}}}{T_{\text{parallel}}(p)}
+$$
 
-where \(p\) is the number of OpenMP threads. Efficiency is
+where $p$ is the number of OpenMP threads. Efficiency is
 
-\[E(p) = \frac{S(p)}{p} \times 100\%.\]
+$$E(p) = \frac{S(p)}{p} \times 100\%$$
 
-The ideal speedup line is \(S(p)=p\). It represents perfect linear scaling: doubling the number of threads would halve the execution time.
+The ideal speedup line is $S(p)=p$. It represents perfect linear scaling: doubling the number of threads would halve the execution time.
 
 All three operations passed the output comparison: the sequential and parallel output images were identical. Otsu also selected the same threshold in both implementations (110).
 
@@ -81,21 +83,21 @@ However, the Otsu measurements show a warning sign: the parallel implementation 
 
 A one-thread OpenMP run is not expected to be substantially faster simply because it uses OpenMP. In this case, the one-thread parallel version is about 26.4% faster than the sequential version:
 
-\[
+$$
 \frac{89.80}{66.10} \approx 1.36.
-\]
+$$
 
 That initial difference inflates every Otsu speedup value because all of them use the same 89.80 ms sequential baseline. For example, the 8-thread speedup is calculated as
 
-\[
+$$
 \frac{89.80}{13.60} \approx 6.60.
-\]
+$$
 
 If we instead compare the 8-thread execution time against the one-thread parallel implementation, the ratio is
 
-\[
+$$
 \frac{66.10}{13.60} \approx 4.86.
-\]
+$$
 
 This is not the standard sequential-to-parallel speedup, but it helps show how much of the reported 6.60× comes from the initial difference between the two implementations.
 
