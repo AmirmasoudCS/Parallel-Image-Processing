@@ -118,7 +118,7 @@ int main(int argc, char* argv[]){
                 &input,
                 &sequential_output,
                 &parallel_output,
-                10
+                50
             );
         }
     }
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
                     &input,
                     &sequential_output,
                     &parallel_output,
-                    10,
+                    50,
                     threshold
                 );
             }
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]){
                 &input,
                 &sequential_output,
                 &parallel_output,
-                10,
+                50,
                 threshold
             );
         }
@@ -163,7 +163,7 @@ int main(int argc, char* argv[]){
                 &input,
                 &sequential_output,
                 &parallel_output,
-                10
+                50
             );
         }
     }
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]){
             &input,
             &sequential_output,
             &parallel_output,
-            10
+            50
         );
 
         int grayscale_saved = 0;
@@ -189,7 +189,7 @@ int main(int argc, char* argv[]){
             &input,
             &sequential_output,
             &parallel_output,
-            10,
+            50,
             128
         );
 
@@ -207,7 +207,7 @@ int main(int argc, char* argv[]){
             &input,
             &sequential_output,
             &parallel_output,
-            10
+            50
         );
 
         int otsu_saved = 0;
