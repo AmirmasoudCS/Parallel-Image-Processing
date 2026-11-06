@@ -20,15 +20,11 @@ All operations were tested on the same RGB image:
 
 The reported execution times are averages over 10 repetitions. Speedup is calculated as
 
-\[
-S(p) = \frac{T_{\text{sequential}}}{T_{\text{parallel}}(p)}
-\]
+\[S(p) = \frac{T_{\text{sequential}}}{T_{\text{parallel}}(p)}\]
 
 where \(p\) is the number of OpenMP threads. Efficiency is
 
-\[
-E(p) = \frac{S(p)}{p} \times 100\%.
-\]
+\[E(p) = \frac{S(p)}{p} \times 100\%.\]
 
 The ideal speedup line is \(S(p)=p\). It represents perfect linear scaling: doubling the number of threads would halve the execution time.
 
