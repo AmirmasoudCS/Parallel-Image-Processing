@@ -122,18 +122,11 @@ The following charts show benchmark results for an image with a resolution of **
   <p><em>Parallel efficiency across different thread counts.</em></p>
 </div>
 
-### Binary Thresholding
+## Results Analysis
 
-<div align="center">
-  <img src="results/charts/threshold_execution_time_3648x5472.png" width="75%" alt="Threshold execution time">
-  <p><em>Execution time of sequential and parallel binary thresholding across different thread counts.</em></p>
-
-  <img src="results/charts/threshold_speedup_3648x5472.png" width="75%" alt="Threshold speedup">
-  <p><em>Speedup achieved by parallel thresholding compared to the sequential implementation.</em></p>
-
-  <img src="results/charts/threshold_efficiency_3648x5472.png" width="75%" alt="Threshold parallel efficiency">
-  <p><em>Parallel efficiency across different thread counts.</em></p>
-</div>
+For a detailed discussion of benchmark results, performance scaling,
+and the observed speedup behavior, see
+[Results Analysis](RESULTS_ANALYSIS.md).
 
 ## License
 
