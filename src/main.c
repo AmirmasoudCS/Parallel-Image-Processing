@@ -9,7 +9,7 @@
 int main(int argc, char* argv[]){
     if(argc < 4 || argc > 5){
         printf("Usage: image_processor <input> <output> <filter> [threshold]\n");
-        printf("Filters: grayscale, threshold\n");
+        printf("Filters: grayscale, threshold, otsu\n");
         return 1;
     }
 
@@ -45,7 +45,6 @@ int main(int argc, char* argv[]){
     if(strcmp(argv[3], "grayscale") == 0){
         if(argc != 4){
             printf("Grayscale does not require a threshold value.\n");
-            correct = 0;
         }
         else{
             correct = benchmark_grayscale(
@@ -65,7 +64,6 @@ int main(int argc, char* argv[]){
 
             if(*argv[4] == '\0' || *end != '\0' || value < 0 || value > 255){
                 printf("Threshold must be an integer between 0 and 255.\n");
-                correct = 0;
             }
             else{
                 threshold = (int)value;
@@ -89,9 +87,22 @@ int main(int argc, char* argv[]){
             );
         }
     }
+    else if(strcmp(argv[3], "otsu") == 0){
+        if(argc != 4){
+            printf("Otsu thresholding does not require a threshold value.\n");
+        }
+        else{
+            correct = benchmark_otsu(
+                &input,
+                &sequential_output,
+                &parallel_output,
+                10
+            );
+        }
+    }
     else{
         printf("Unknown filter: %s\n", argv[3]);
-        printf("Available filters: grayscale, threshold\n");
+        printf("Available filters: grayscale, threshold, otsu\n");
     }
 
     if(correct){
