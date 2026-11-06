@@ -18,15 +18,17 @@ All operations were tested on the same RGB image:
 | Repetitions per configuration | 10 |
 | Parallel configurations | 1–8 threads |
 
-The reported execution times are averages over 10 repetitions. Speedup is calculated as
+The reported execution times are averages over 10 repetitions. Speedup is calculated as:
 
 $$
 S(p) = \frac{T_{\text{sequential}}}{T_{\text{parallel}}(p)}
 $$
 
-where $p$ is the number of OpenMP threads. Efficiency is
+where $p$ is the number of OpenMP threads. Efficiency is:
 
-$$E(p) = \frac{S(p)}{p} \times 100\%$$
+$$
+E(p) = \frac{S(p)}{p} \times 100\%
+$$
 
 The ideal speedup line is $S(p)=p$. It represents perfect linear scaling: doubling the number of threads would halve the execution time.
 
@@ -42,7 +44,7 @@ All three operations passed the output comparison: the sequential and parallel o
 
 The results show that all three operations benefit from parallel execution as the thread count increases. The 8-thread configuration is the fastest configuration for each operation in this experiment.
 
-### Grayscale conversion
+## 3. Grayscale conversion
 
 Grayscale conversion achieves a speedup of approximately 4.03× with 8 threads. Its execution time decreases from 28.20 ms sequentially to 7.00 ms with 8 threads.
 
@@ -50,19 +52,49 @@ The speedup generally increases as more threads are used, although it does not s
 
 These small fluctuations are normal in timing experiments. Thread scheduling, operating-system activity, memory bandwidth, CPU frequency changes, and other background activity can affect individual measurements. The 8-thread result is the best in this run, but the intermediate results are not perfectly monotonic.
 
-### Fixed thresholding
+<div align="center">
+  <img src="results/charts/grayscale_speedup.png" alt="Grayscale speedup chart" width="85%">
+  <p><em>Grayscale speedup versus the number of OpenMP threads. The speedup generally increases, with small fluctuations at 6 and 7 threads.</em></p>
+</div>
+
+<div align="center">
+  <img src="results/charts/grayscale_efficiency.png" alt="Grayscale efficiency chart" width="85%">
+  <p><em>Grayscale parallel efficiency. Efficiency decreases as more threads are added because speedup does not grow linearly with thread count.</em></p>
+</div>
+
+## 4. Fixed thresholding
 
 Fixed thresholding achieves the strongest scaling of the two simpler operations, reaching 5.15× speedup with 8 threads. Execution time falls from 34.00 ms to 6.60 ms.
 
 The speedup increases at every tested thread count in this run. However, scaling is still sublinear: 8 threads do not provide an 8× speedup. This is expected because parallel execution has overhead, and the operation is also constrained by memory access and memory bandwidth.
 
-### Otsu thresholding
+<div align="center">
+  <img src="results/charts/threshold_speedup.png" alt="Fixed threshold speedup chart" width="85%">
+  <p><em>Fixed-threshold speedup. The measured speedup increases consistently from 1 to 8 threads, reaching approximately 5.15×.</em></p>
+</div>
+
+<div align="center">
+  <img src="results/charts/threshold_efficiency.png" alt="Fixed threshold efficiency chart" width="85%">
+  <p><em>Fixed-threshold parallel efficiency. Efficiency gradually decreases as thread count increases, despite the continued reduction in execution time.</em></p>
+</div>
+
+## 5. Otsu thresholding
 
 Otsu achieves the highest reported 8-thread speedup: approximately 6.60×. Its execution time decreases from 89.80 ms sequentially to 13.60 ms with 8 threads.
 
-The Otsu result has an important distinction: its parallel implementation is already considerably faster than its sequential implementation when using only one thread. The implications of this are discussed in the next section. Therefore, its speedup figures should not yet be interpreted as a clean measurement of parallel scaling.
+The Otsu result has an important distinction: its parallel implementation is already considerably faster than its sequential implementation when using only one thread. The implications of this are discussed below. Therefore, its speedup figures should not yet be interpreted as a clean measurement of parallel scaling.
 
-## 3. Why does the Otsu speedup exceed the ideal line?
+<div align="center">
+  <img src="results/charts/otsu_speedup.png" alt="Otsu speedup chart" width="85%">
+  <p><em>Otsu speedup compared with the sequential implementation. The measured values exceed the ideal speedup line for thread counts 1 through 4.</em></p>
+</div>
+
+<div align="center">
+  <img src="results/charts/otsu_efficiency.png" alt="Otsu efficiency chart" width="85%">
+  <p><em>Otsu parallel efficiency. Values above 100% for the first four configurations reflect the unusually fast one-thread parallel baseline, rather than ordinary parallel efficiency.</em></p>
+</div>
+
+## 6. Why does the Otsu speedup exceed the ideal line?
 
 The Otsu speedup values are:
 
@@ -77,26 +109,26 @@ The Otsu speedup values are:
 | 7 | 6.24× | 7× |
 | 8 | 6.60× | 8× |
 
-A measured speedup above the ideal \(S(p)=p\) line is called **superlinear speedup**. It is possible in parallel computing. For example, splitting a problem across processors can sometimes improve cache behavior enough that the combined execution time decreases by more than the number of processors alone would suggest.
+A measured speedup above the ideal $S(p)=p$ line is called **superlinear speedup**. It is possible in parallel computing. For example, splitting a problem across processors can sometimes improve cache behavior enough that the combined execution time decreases by more than the number of processors alone would suggest.
 
 However, the Otsu measurements show a warning sign: the parallel implementation with just **one thread takes 66.10 ms**, while the sequential implementation takes **89.80 ms**.
 
 A one-thread OpenMP run is not expected to be substantially faster simply because it uses OpenMP. In this case, the one-thread parallel version is about 26.4% faster than the sequential version:
 
 $$
-\frac{89.80}{66.10} \approx 1.36.
+\frac{89.80}{66.10} \approx 1.36
 $$
 
-That initial difference inflates every Otsu speedup value because all of them use the same 89.80 ms sequential baseline. For example, the 8-thread speedup is calculated as
+That initial difference inflates every Otsu speedup value because all of them use the same 89.80 ms sequential baseline. For example, the 8-thread speedup is calculated as:
 
 $$
-\frac{89.80}{13.60} \approx 6.60.
+\frac{89.80}{13.60} \approx 6.60
 $$
 
-If we instead compare the 8-thread execution time against the one-thread parallel implementation, the ratio is
+If we instead compare the 8-thread execution time against the one-thread parallel implementation, the ratio is:
 
 $$
-\frac{66.10}{13.60} \approx 4.86.
+\frac{66.10}{13.60} \approx 4.86
 $$
 
 This is not the standard sequential-to-parallel speedup, but it helps show how much of the reported 6.60× comes from the initial difference between the two implementations.
@@ -113,6 +145,7 @@ Possible causes include:
 4. **Different histogram construction strategies:** The parallel version uses per-thread histograms and combines them, while the sequential version builds one histogram. These should be logically equivalent, but their implementation details may lead to different performance.
 
 The first thing to investigate is the implementation itself. Check that both versions:
+
 - Calculate grayscale intensity in the same way.
 - Visit every pixel exactly once when building the histogram.
 - Use the same Otsu threshold-selection calculation.
@@ -125,7 +158,7 @@ After checking the implementations, run more repetitions and consider alternatin
 
 **Conclusion:** Superlinear speedup is possible, but the Otsu result should be treated as suspicious until the 1-thread parallel implementation and sequential implementation are checked for equivalent work. The output comparison confirms correctness of the resulting image; it does not prove that the two implementations perform exactly the same amount of work.
 
-## 4. Why is speedup below the ideal line for the other operations?
+## 7. Why is speedup below the ideal line for the other operations?
 
 Grayscale and fixed thresholding both show the expected sublinear scaling. This is normal.
 
@@ -140,7 +173,7 @@ Some of the main limitations are:
 
 For these reasons, adding more threads usually produces diminishing returns rather than perfectly linear speedup.
 
-## 5. Correctness
+## 8. Correctness
 
 All three benchmark records report:
 
@@ -154,7 +187,7 @@ The output comparison is important because performance improvements are only use
 
 For Otsu, the selected threshold was 110 in both implementations, and the generated output images were identical.
 
-## 6. Conclusion
+## 9. Conclusion
 
 For this image and this test environment, the 8-thread configuration produced the lowest execution time for all three operations. Fixed thresholding reached 5.15× speedup, grayscale reached 4.03×, and Otsu reported 6.60×.
 
