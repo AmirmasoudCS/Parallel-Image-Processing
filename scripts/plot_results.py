@@ -244,6 +244,7 @@ def generate_charts(results, output_dir):
 
         correct = all(
             record["outputs_identical"]
+            and record.get("thresholds_identical", True)
             for record in records
         )
 
@@ -251,6 +252,17 @@ def generate_charts(results, output_dir):
         print(f"Image: {image_size}")
         print(f"Benchmark runs: {len(records)}")
         print(f"Correctness: {'PASS' if correct else 'FAIL'}")
+
+        if filter_name == "otsu":
+            thresholds = [
+                record["threshold"]
+                for record in records
+                if record.get("threshold") is not None
+            ]
+
+            if thresholds:
+                print(f"Selected Otsu threshold: {mean(thresholds):.2f}")
+
         print(f"Sequential: {data['sequential_time'] * 1000:.4f} ms")
 
         for i, threads in enumerate(data["threads"]):
