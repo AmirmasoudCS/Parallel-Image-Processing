@@ -33,7 +33,7 @@ A C project that applies image-processing filters sequentially and in parallel u
 └── tree.txt
 ```
 
-Generated using [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git).
+> Generated using [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git).
 
 ## Compile
 
