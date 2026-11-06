@@ -71,6 +71,12 @@ The program accepts an input image, output path, filter name, and an optional th
 
 The threshold value must be an integer between 0 and 255.
 
+**Otsu binarization:**
+
+```powershell
+.\build\image_processor.exe images/image1.jpg images/output/threshold_180.png otsu
+```
+
 For each filter, the program benchmarks the sequential implementation and then the parallel implementation using **1 to 8 threads**. It checks the outputs and appends the measurements to:
 
 ```text
