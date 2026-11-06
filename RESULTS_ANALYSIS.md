@@ -1,6 +1,6 @@
 # Benchmark Results Analysis
 
-## 1. Experimental setup
+## 1. Experimental Setup
 
 The benchmarks compare sequential and OpenMP implementations of three image-processing operations:
 
@@ -8,222 +8,252 @@ The benchmarks compare sequential and OpenMP implementations of three image-proc
 - Fixed thresholding, using a threshold of 128
 - Otsu's automatic thresholding
 
-All operations were tested on the same RGB image:
+All operations were tested using the same RGB image with the following specifications:
 
 | Property | Value |
 |---|---:|
-| Image dimensions | 3648 × 5472 |
-| Number of pixels | 19,961,856 |
+| Image width | 3648 pixels |
+| Image height | 5472 pixels |
 | Channels | 3 (RGB) |
-| Repetitions per configuration | 10 |
-| Parallel configurations | 1–8 threads |
+| Total pixels | 19,961,856 |
+| Repetitions | 50 |
+| Thread configurations | 1 to 8 |
 
-The reported execution times are averages over 10 repetitions. Speedup is calculated as:
+Each filter was benchmarked using both its sequential and parallel implementations.
+
+To reduce measurement-order bias, sequential and parallel executions were measured in alternating order. The sequential baseline was calculated by averaging measurements across all eight thread configurations.
+
+The following metrics were calculated:
+
+- **Execution Time:** Average time required to complete the operation.
+- **Speedup:** Ratio between sequential and parallel execution times.
+- **Efficiency:** Speedup divided by the number of threads, expressed as a percentage.
+
+The speedup and efficiency are calculated using:
 
 $$
-S(p) = \frac{T_{\text{sequential}}}{T_{\text{parallel}}(p)}
+Speedup = \frac{T_{sequential}}{T_{parallel}}
 $$
 
-where $p$ is the number of OpenMP threads. Efficiency is:
-
 $$
-E(p) = \frac{S(p)}{p} \times 100\%
+Efficiency = \frac{Speedup}{Number\ of\ Threads} \times 100
 $$
 
-The ideal speedup line is $S(p)=p$. It represents perfect linear scaling: doubling the number of threads would halve the execution time.
+---
 
-All three operations passed the output comparison: the sequential and parallel output images were identical. Otsu also selected the same threshold in both implementations (110).
+## 2. Results Overview
 
-## 2. Results overview
+The following table summarizes the benchmark results.
 
-| Operation | Sequential time | 1-thread time | 8-thread time | 8-thread speedup |
+### Sequential Execution Times
+
+| Filter | Execution Time |
+|---|---:|
+| Grayscale | 28.43 ms |
+| Fixed Threshold | 32.52 ms |
+| Otsu | 67.07 ms |
+
+### Best Parallel Results
+
+| Filter | Threads | Execution Time | Speedup | Efficiency |
 |---|---:|---:|---:|---:|
-| Grayscale | 28.20 ms | 28.80 ms | 7.00 ms | 4.03× |
-| Fixed threshold | 34.00 ms | 34.20 ms | 6.60 ms | 5.15× |
-| Otsu thresholding | 89.80 ms | 66.10 ms | 13.60 ms | 6.60× |
+| Grayscale | 8 | 7.46 ms | 3.81x | 47.65% |
+| Fixed Threshold | 8 | 8.22 ms | 3.96x | 49.45% |
+| Otsu | 8 | 17.60 ms | 3.81x | 47.64% |
 
-The results show that all three operations benefit from parallel execution as the thread count increases. The 8-thread configuration is the fastest configuration for each operation in this experiment.
+All three filters achieved their lowest execution time with eight threads.
 
-## 3. Grayscale conversion
+---
 
-Grayscale conversion achieves a speedup of approximately 4.03× with 8 threads. Its execution time decreases from 28.20 ms sequentially to 7.00 ms with 8 threads.
+## 3. Grayscale Conversion
 
-The speedup generally increases as more threads are used, although it does not scale linearly. For example, the 5-thread configuration reaches 3.17×, while the 6-thread configuration drops slightly to 2.94×. The result at 7 threads recovers to 3.13×.
-
-These small fluctuations are normal in timing experiments. Thread scheduling, operating-system activity, memory bandwidth, CPU frequency changes, and other background activity can affect individual measurements. The 8-thread result is the best in this run, but the intermediate results are not perfectly monotonic.
-
-### Grayscale execution time
+### Execution Time
 
 <div align="center">
   <img src="results/charts/grayscale_execution_time_3648x5472.png" alt="Grayscale execution time" width="85%">
-  <p><em>Execution time decreases as more OpenMP threads are used. The 8-thread configuration provides the lowest measured execution time.</em></p>
+  <p><em>Execution time of grayscale conversion using different numbers of threads.</em></p>
 </div>
 
-### Grayscale speedup
+The sequential implementation takes approximately 28.43 ms.
+
+Increasing the number of threads generally reduces execution time. With eight threads, the execution time drops to approximately 7.46 ms.
+
+There is a small performance regression when moving from six to seven threads. Execution time increases from 7.98 ms to 9.10 ms.
+
+This behavior can occur because adding threads does not always guarantee better performance. Thread scheduling overhead, CPU resource contention, and memory bandwidth limitations can affect execution time.
+
+With eight threads, performance improves again, reaching the lowest execution time.
+
+### Speedup
 
 <div align="center">
   <img src="results/charts/grayscale_speedup_3648x5472.png" alt="Grayscale speedup" width="85%">
-  <p><em>Grayscale speedup generally increases with thread count, reaching approximately 4.03× with 8 threads. Small fluctuations appear at 6 and 7 threads.</em></p>
+  <p><em>Speedup achieved by the parallel grayscale implementation.</em></p>
 </div>
 
-### Grayscale efficiency
+The parallel implementation achieves a maximum speedup of approximately 3.81x with eight threads.
+
+The one-thread implementation is slightly slower than the sequential version, achieving a speedup of 0.90x. This is expected because OpenMP introduces additional overhead.
+
+Adding more threads significantly improves performance, although the speedup does not increase linearly.
+
+### Efficiency
 
 <div align="center">
   <img src="results/charts/grayscale_efficiency_3648x5472.png" alt="Grayscale efficiency" width="85%">
-  <p><em>Parallel efficiency decreases as more threads are added because speedup does not grow linearly with thread count.</em></p>
+  <p><em>Parallel efficiency of grayscale conversion.</em></p>
 </div>
 
-## 4. Fixed thresholding
+Efficiency generally decreases as the number of threads increases.
 
-Fixed thresholding achieves the strongest scaling of the two simpler operations, reaching 5.15× speedup with 8 threads. Execution time falls from 34.00 ms to 6.60 ms.
+The two-thread configuration achieves approximately 95.16% efficiency, while the eight-thread configuration achieves 47.65%.
 
-The speedup increases at every tested thread count in this run. However, scaling is still sublinear: 8 threads do not provide an 8× speedup. This is expected because parallel execution has overhead, and the operation is also constrained by memory access and memory bandwidth.
+This is expected because the performance gain from additional threads becomes progressively smaller. The workload also involves memory operations, which can limit scalability as more threads compete for memory bandwidth.
 
-### Fixed threshold execution time
+---
+
+## 4. Fixed Thresholding
+
+### Execution Time
 
 <div align="center">
-  <img src="results/charts/threshold_execution_time_3648x5472.png" alt="Fixed threshold execution time" width="85%">
-  <p><em>Execution time decreases consistently as the number of threads increases, reaching 6.60 ms with 8 threads.</em></p>
+  <img src="results/charts/threshold_execution_time_3648x5472.png" alt="Threshold execution time" width="85%">
+  <p><em>Execution time of fixed thresholding using different numbers of threads.</em></p>
 </div>
 
-### Fixed threshold speedup
+The sequential implementation takes approximately 32.52 ms.
+
+Parallel execution reduces this time to approximately 8.22 ms with eight threads.
+
+The overall trend is a consistent reduction in execution time as more threads are introduced, although there is a small regression between four and five threads.
+
+The execution time increases slightly from 10.58 ms to 10.70 ms before decreasing again with six, seven, and eight threads.
+
+These small fluctuations are normal in parallel benchmarks and can be caused by scheduling overhead and variations in system resource availability.
+
+### Speedup
 
 <div align="center">
-  <img src="results/charts/threshold_speedup_3648x5472.png" alt="Fixed threshold speedup" width="85%">
-  <p><em>Fixed-threshold speedup increases consistently from 1 to 8 threads, reaching approximately 5.15×.</em></p>
+  <img src="results/charts/threshold_speedup_3648x5472.png" alt="Threshold speedup" width="85%">
+  <p><em>Speedup achieved by the parallel thresholding implementation.</em></p>
 </div>
 
-### Fixed threshold efficiency
+Fixed thresholding achieves the highest speedup among the three filters, reaching approximately 3.96x with eight threads.
+
+This suggests that the operation benefits considerably from parallel execution.
+
+The implementation processes pixels independently, making it particularly suitable for parallelization. Each thread can process a separate portion of the image without requiring communication between threads.
+
+### Efficiency
 
 <div align="center">
-  <img src="results/charts/threshold_efficiency_3648x5472.png" alt="Fixed threshold efficiency" width="85%">
-  <p><em>Parallel efficiency gradually decreases as thread count increases, despite the continued reduction in execution time.</em></p>
+  <img src="results/charts/threshold_efficiency_3648x5472.png" alt="Threshold efficiency" width="85%">
+  <p><em>Parallel efficiency of fixed thresholding.</em></p>
 </div>
 
-## 5. Otsu thresholding
+Efficiency starts at approximately 98.07% with one thread and gradually decreases as more threads are used.
 
-Otsu achieves the highest reported 8-thread speedup: approximately 6.60×. Its execution time decreases from 89.80 ms sequentially to 13.60 ms with 8 threads.
+With eight threads, efficiency is approximately 49.45%.
 
-The Otsu result has an important distinction: its parallel implementation is already considerably faster than its sequential implementation when using only one thread. The implications of this are discussed below. Therefore, its speedup figures should not yet be interpreted as a clean measurement of parallel scaling.
+Although efficiency decreases, the overall execution time continues to improve. This means that additional threads are still providing useful performance gains, even though each thread contributes less than the previous one.
 
-### Otsu execution time
+---
+
+## 5. Otsu's Automatic Thresholding
+
+### Execution Time
 
 <div align="center">
   <img src="results/charts/otsu_execution_time_3648x5472.png" alt="Otsu execution time" width="85%">
-  <p><em>Otsu execution time decreases as more threads are used. The 8-thread configuration reaches 13.60 ms.</em></p>
+  <p><em>Execution time of Otsu thresholding using different numbers of threads.</em></p>
 </div>
 
-### Otsu speedup
+Otsu thresholding is the most computationally expensive operation among the three filters.
+
+The sequential implementation takes approximately 67.07 ms, which is considerably higher than grayscale conversion and fixed thresholding.
+
+This is because Otsu thresholding requires additional processing:
+
+1. Constructing a grayscale histogram.
+2. Calculating the optimal threshold using between-class variance.
+3. Applying the selected threshold to the image.
+
+The parallel implementation reduces execution time to approximately 17.60 ms with eight threads.
+
+Unlike fixed thresholding, Otsu also requires histogram construction and threshold calculation. The parallel implementation uses thread-local histograms to avoid concurrent updates to a shared histogram.
+
+There is a small regression between four and five threads, where execution time increases from 21.10 ms to 21.70 ms. Performance improves again with six, seven, and eight threads.
+
+### Speedup
 
 <div align="center">
   <img src="results/charts/otsu_speedup_3648x5472.png" alt="Otsu speedup" width="85%">
-  <p><em>Otsu speedup compared with the sequential implementation. The measured values exceed the ideal speedup line for thread counts 1 through 4.</em></p>
+  <p><em>Speedup achieved by the parallel Otsu implementation.</em></p>
 </div>
 
-### Otsu efficiency
+Otsu achieves a maximum speedup of approximately 3.81x with eight threads.
+
+An important observation is the one-thread result, which achieves a speedup of approximately 1.01x.
+
+This means that the sequential and one-thread parallel implementations have almost identical execution times.
+
+Unlike the earlier benchmark results, the one-thread parallel implementation is no longer significantly faster than the sequential implementation. This is a more reasonable result because the parallel implementation introduces additional overhead from OpenMP and histogram management.
+
+### Efficiency
 
 <div align="center">
   <img src="results/charts/otsu_efficiency_3648x5472.png" alt="Otsu efficiency" width="85%">
-  <p><em>Otsu efficiency exceeds 100% for the first four configurations because the one-thread parallel implementation is already faster than the sequential baseline.</em></p>
+  <p><em>Parallel efficiency of Otsu thresholding.</em></p>
 </div>
 
-## 6. Why does the Otsu speedup exceed the ideal line?
+Otsu starts with approximately 100.83% efficiency at one thread and decreases as more threads are introduced.
 
-The Otsu speedup values are:
+With eight threads, efficiency is approximately 47.64%.
 
-| Threads | Speedup | Ideal speedup |
-|---:|---:|---:|
-| 1 | 1.36× | 1× |
-| 2 | 2.65× | 2× |
-| 3 | 3.85× | 3× |
-| 4 | 4.85× | 4× |
-| 5 | 4.85× | 5× |
-| 6 | 5.51× | 6× |
-| 7 | 6.24× | 7× |
-| 8 | 6.60× | 8× |
+The decrease in efficiency is expected because not every part of Otsu thresholding can benefit equally from parallel execution.
 
-A measured speedup above the ideal $S(p)=p$ line is called **superlinear speedup**. It is possible in parallel computing. For example, splitting a problem across processors can sometimes improve cache behavior enough that the combined execution time decreases by more than the number of processors alone would suggest.
+In particular, combining the local histograms and calculating the final threshold introduce sequential work that limits scalability.
 
-However, the Otsu measurements show a warning sign: the parallel implementation with just **one thread takes 66.10 ms**, while the sequential implementation takes **89.80 ms**.
+---
 
-A one-thread OpenMP run is not expected to be substantially faster simply because it uses OpenMP. In this case, the one-thread parallel version is about 26.4% faster than the sequential version:
+## 6. Correctness Verification
 
-$$
-\frac{89.80}{66.10} \approx 1.36
-$$
+In addition to measuring performance, the benchmark checks whether the sequential and parallel implementations produce identical results.
 
-That initial difference inflates every Otsu speedup value because all of them use the same 89.80 ms sequential baseline. For example, the 8-thread speedup is calculated as:
-
-$$
-\frac{89.80}{13.60} \approx 6.60
-$$
-
-If we instead compare the 8-thread execution time against the one-thread parallel implementation, the ratio is:
-
-$$
-\frac{66.10}{13.60} \approx 4.86
-$$
-
-This is not the standard sequential-to-parallel speedup, but it helps show how much of the reported 6.60× comes from the initial difference between the two implementations.
-
-### Does this mean the code is wrong?
-
-Not necessarily, but it means the Otsu benchmark is not yet a fair comparison of sequential and parallel performance.
-
-Possible causes include:
-
-1. **Different implementation paths:** The sequential and parallel Otsu functions may perform different amounts of work or use different operations, even if they produce identical output and select the same threshold.
-2. **Compiler optimization differences:** The compiler may optimize the two code paths differently.
-3. **Measurement effects:** CPU frequency changes, cache state, and background activity can affect timings. Ten repetitions reduce some noise, but do not eliminate systematic differences.
-4. **Different histogram construction strategies:** The parallel version uses per-thread histograms and combines them, while the sequential version builds one histogram. These should be logically equivalent, but their implementation details may lead to different performance.
-
-The first thing to investigate is the implementation itself. Check that both versions:
-
-- Calculate grayscale intensity in the same way.
-- Visit every pixel exactly once when building the histogram.
-- Use the same Otsu threshold-selection calculation.
-- Apply the selected threshold to every pixel in the same way.
-- Include all required work in the timed region.
-
-Also make sure that the sequential and parallel implementations are both compiled with the same optimization flags. The current benchmark does this when they are built in the same executable, but differences in the functions themselves can still matter.
-
-After checking the implementations, run more repetitions and consider alternating the order in which sequential and parallel measurements are taken. This can help reduce bias caused by changing CPU conditions.
-
-**Conclusion:** Superlinear speedup is possible, but the Otsu result should be treated as suspicious until the 1-thread parallel implementation and sequential implementation are checked for equivalent work. The output comparison confirms correctness of the resulting image; it does not prove that the two implementations perform exactly the same amount of work.
-
-## 7. Why is speedup below the ideal line for the other operations?
-
-Grayscale and fixed thresholding both show the expected sublinear scaling. This is normal.
-
-The ideal line assumes that all work can be divided perfectly between threads and that adding threads introduces no overhead. Real systems do not behave that way.
-
-Some of the main limitations are:
-
-- **OpenMP overhead:** Creating and coordinating a parallel team takes time.
-- **Memory bandwidth:** Each thread reads and writes image data. Eventually, memory access can become the bottleneck.
-- **Uneven scheduling and system activity:** Threads may not receive exactly equal effective execution time.
-- **Serial work:** Any work that cannot be parallelized limits the maximum speedup.
-
-For these reasons, adding more threads usually produces diminishing returns rather than perfectly linear speedup.
-
-## 8. Correctness
-
-All three benchmark records report:
-
-| Operation | Outputs identical | Thresholds identical |
+| Filter | Outputs Identical | Thresholds Identical |
 |---|---|---|
 | Grayscale | Yes | Yes |
-| Fixed threshold | Yes | Yes |
+| Fixed Threshold | Yes | Yes |
 | Otsu | Yes | Yes |
 
-The output comparison is important because performance improvements are only useful if the parallel implementation preserves the expected result.
+For Otsu thresholding, both implementations selected the same threshold:
 
-For Otsu, the selected threshold was 110 in both implementations, and the generated output images were identical.
+$$
+Threshold = 110
+$$
 
-## 9. Conclusion
+All three filters produced identical sequential and parallel output images.
 
-For this image and this test environment, the 8-thread configuration produced the lowest execution time for all three operations. Fixed thresholding reached 5.15× speedup, grayscale reached 4.03×, and Otsu reported 6.60×.
+This confirms that the parallel implementations preserve the expected results while improving execution time.
 
-The grayscale and fixed-threshold results show plausible sublinear scaling. The Otsu result appears superlinear for thread counts 1–4, but the fact that its one-thread parallel implementation is already 1.36× faster than its sequential implementation suggests that the baseline comparison needs further investigation.
+---
 
-The next step should be to inspect and align the sequential and parallel Otsu implementations before making a strong claim about its parallel speedup.
+## 7. Conclusion
+
+The benchmarks demonstrate that OpenMP can significantly improve the performance of image-processing operations.
+
+All three filters achieved their best execution times with eight threads:
+
+- Grayscale conversion achieved a 3.81x speedup.
+- Fixed thresholding achieved a 3.96x speedup.
+- Otsu thresholding achieved a 3.81x speedup.
+
+Fixed thresholding achieved the highest speedup because its pixel-processing operations are independent and require little additional coordination between threads.
+
+Otsu thresholding is computationally more expensive due to histogram construction and threshold calculation. Its parallel implementation still achieved a substantial performance improvement.
+
+Although adding threads generally improves execution time, speedup does not scale linearly. Thread management overhead, memory bandwidth limitations, and sequential portions of the algorithms all affect parallel efficiency.
+
+The results also show that small performance regressions can occur when increasing the thread count. These fluctuations are not necessarily implementation errors and can result from hardware and runtime conditions.
+
+Overall, the experiment demonstrates the benefits of parallel image processing while highlighting the practical limitations of parallel scalability.
