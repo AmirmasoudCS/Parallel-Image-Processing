@@ -105,23 +105,6 @@ python scripts/plot_results.py
 
 The charts are saved in `results/charts/`, with separate charts for each filter.
 
-## Example Results
-
-The following charts show benchmark results for an image with a resolution of **3648 × 5472**.
-
-### Grayscale
-
-<div align="center">
-  <img src="results/charts/grayscale_execution_time_3648x5472.png" width="75%" alt="Grayscale execution time">
-  <p><em>Execution time of sequential and parallel grayscale conversion across different thread counts.</em></p>
-
-  <img src="results/charts/grayscale_speedup_3648x5472.png" width="75%" alt="Grayscale speedup">
-  <p><em>Speedup achieved by parallel grayscale conversion compared to the sequential implementation.</em></p>
-
-  <img src="results/charts/grayscale_efficiency_3648x5472.png" width="75%" alt="Grayscale parallel efficiency">
-  <p><em>Parallel efficiency across different thread counts.</em></p>
-</div>
-
 ## Results Analysis
 
 For a detailed discussion of benchmark results, performance scaling,
