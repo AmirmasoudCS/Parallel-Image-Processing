@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -38,6 +39,135 @@ int otsu_parallel_wrapper(const Image* input, Image* output, int parameter, int*
     (void)parameter;
     return otsu_parallel(input, output, threshold);
 }
+
+
+static int save_benchmark_result(
+    const Image* input,
+    int repetitions,
+    double sequential_time,
+    double parallel_times[],
+    double speedups[],
+    double efficiencies[],
+    int number_of_configs,
+    const char* filter_name,
+    int parameter,
+    int sequential_threshold,
+    int outputs_identical,
+    int thresholds_identical
+){
+    const char* filename = "results/benchmark_results.jsonl";
+    const char* temporary_filename = "results/benchmark_results.tmp";
+
+    char filter_pattern[64];
+    snprintf(filter_pattern, sizeof(filter_pattern), "\"filter\": \"%s\"", filter_name);
+
+    FILE* original = fopen(filename, "r");
+    FILE* temporary = fopen(temporary_filename, "w");
+
+    if(temporary == NULL){
+        printf("Failed to create temporary benchmark file!\n");
+        if(original != NULL) fclose(original);
+        return 0;
+    }
+
+    if(original != NULL){
+        char line[8192];
+
+        while(fgets(line, sizeof(line), original) != NULL){
+            if(strstr(line, filter_pattern) == NULL){
+                fputs(line, temporary);
+            }
+        }
+
+        fclose(original);
+    }
+
+    time_t timestamp = time(NULL);
+
+    fprintf(temporary,
+        "{"
+        "\"timestamp\": %lld,"
+        "\"filter\": \"%s\","
+        "\"image\": {"
+            "\"width\": %d,"
+            "\"height\": %d,"
+            "\"channels\": %d,"
+            "\"total_pixels\": %llu"
+        "},"
+        "\"threshold\": ",
+        (long long)timestamp,
+        filter_name,
+        input->width,
+        input->height,
+        input->channels,
+        (unsigned long long)input->width * input->height
+    );
+
+    if(strcmp(filter_name, "grayscale") == 0){
+        fprintf(temporary, "null");
+    }
+    else if(strcmp(filter_name, "otsu") == 0){
+        fprintf(temporary, "%d", sequential_threshold);
+    }
+    else{
+        fprintf(temporary, "%d", parameter);
+    }
+
+    fprintf(temporary,
+        ","
+        "\"repetitions\": %d,"
+        "\"sequential_time\": %.9f,"
+        "\"parallel_results\": [",
+        repetitions,
+        sequential_time
+    );
+
+    for(int i = 0; i < number_of_configs; i++){
+        fprintf(temporary,
+            "%s{"
+                "\"threads\": %d,"
+                "\"time\": %.9f,"
+                "\"speedup\": %.4f,"
+                "\"efficiency\": %.4f"
+            "}",
+            i == 0 ? "" : ",",
+            i+1,
+            parallel_times[i],
+            speedups[i],
+            efficiencies[i]
+        );
+    }
+
+    fprintf(temporary,
+        "],"
+        "\"outputs_identical\": %s,"
+        "\"thresholds_identical\": %s"
+        "}\n",
+        outputs_identical ? "true" : "false",
+        thresholds_identical ? "true" : "false"
+    );
+
+    int write_error = ferror(temporary);
+    int close_error = fclose(temporary);
+
+    if(write_error || close_error){
+        printf("Failed to write benchmark results!\n");
+        remove(temporary_filename);
+        return 0;
+    }
+
+    remove(filename);
+
+    if(rename(temporary_filename, filename) != 0){
+        printf("Failed to update benchmark results file!\n");
+        return 0;
+    }
+
+    printf("\nBenchmark results saved successfully!\n");
+
+    return 1;
+}
+
 
 static int benchmark_filter(
     const Image* input,
@@ -147,84 +277,26 @@ static int benchmark_filter(
         }
     }
 
-    FILE* file = fopen("results/benchmark_results.jsonl", "a");
-
-    if(file == NULL) printf("Failed to open benchmark results file!\n");
-    else{
-        time_t timestamp = time(NULL);
-
-        fprintf(file,
-            "{"
-            "\"timestamp\": %lld,"
-            "\"filter\": \"%s\","
-            "\"image\": {"
-                "\"width\": %d,"
-                "\"height\": %d,"
-                "\"channels\": %d,"
-                "\"total_pixels\": %llu"
-            "},"
-            "\"threshold\": ",
-            (long long)timestamp,
-            filter_name,
-            input->width,
-            input->height,
-            input->channels,
-            (unsigned long long)input->width * input->height
-        );
-
-        if(strcmp(filter_name, "grayscale") == 0){
-            fprintf(file, "null");
-        }
-        else if(strcmp(filter_name, "otsu") == 0){
-            fprintf(file, "%d", sequential_threshold);
-        }
-        else{
-            fprintf(file, "%d", parameter);
-        }
-
-        fprintf(file,
-            ","
-            "\"repetitions\": %d,"
-            "\"sequential_time\": %.9f,"
-            "\"parallel_results\": [",
-            repetitions,
-            sequential_time
-        );
-
-        for(int i = 0; i < number_of_configs; i++){
-            fprintf(file,
-                "%s{"
-                    "\"threads\": %d,"
-                    "\"time\": %.9f,"
-                    "\"speedup\": %.4f,"
-                    "\"efficiency\": %.4f"
-                "}",
-                i == 0 ? "" : ",",
-                i+1,
-                parallel_times[i],
-                speedups[i],
-                efficiencies[i]
-            );
-        }
-
-        fprintf(file,
-            "],"
-            "\"outputs_identical\": %s,"
-            "\"thresholds_identical\": %s"
-            "}\n",
-            outputs_identical ? "true" : "false",
-            thresholds_identical ? "true" : "false"
-        );
-
-        fclose(file);
-
-        printf("\nBenchmark results saved successfully!\n");
-    }
+    int saved = save_benchmark_result(
+        input,
+        repetitions,
+        sequential_time,
+        parallel_times,
+        speedups,
+        efficiencies,
+        number_of_configs,
+        filter_name,
+        parameter,
+        sequential_threshold,
+        outputs_identical,
+        thresholds_identical
+    );
 
     printf("=======================================\n");
 
-    return correct;
+    return correct && saved;
 }
+
 
 int benchmark_grayscale(
     const Image* input,
@@ -244,6 +316,7 @@ int benchmark_grayscale(
     );
 }
 
+
 int benchmark_threshold(
     const Image* input,
     Image* sequential_output,
@@ -262,6 +335,7 @@ int benchmark_threshold(
         threshold_parallel_wrapper
     );
 }
+
 
 int benchmark_otsu(
     const Image* input,
