@@ -1,4 +1,3 @@
-
 #ifndef FILTERS_H
 #define FILTERS_H
 
@@ -11,5 +10,9 @@ int grayscale_parallel(const Image* input, Image* output);
 int threshold_sequential(const Image* input, Image* output, int threshold);
 
 int threshold_parallel(const Image* input, Image* output, int threshold);
+
+int otsu_sequential(const Image* input, Image* output, int* threshold);
+
+int otsu_parallel(const Image* input, Image* output, int* threshold);
 
 #endif
