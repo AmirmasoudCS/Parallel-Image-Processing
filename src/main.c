@@ -6,10 +6,77 @@
 #include "filters.h"
 #include "benchmark.h"
 
+
+static int save_all_output(
+    const Image* output,
+    const char* filename,
+    const char* filter_name
+){
+    char output_filename[1024];
+
+    const char* extension = strrchr(filename, '.');
+    const char* separator = strrchr(filename, '/');
+    const char* windows_separator = strrchr(filename, '\\');
+
+    if(windows_separator != NULL &&
+       (separator == NULL || windows_separator > separator)){
+        separator = windows_separator;
+    }
+
+    if(extension != NULL && separator != NULL && extension < separator){
+        extension = NULL;
+    }
+
+    int result;
+
+    if(extension != NULL){
+        int base_length = (int)(extension - filename);
+
+        result = snprintf(
+            output_filename,
+            sizeof(output_filename),
+            "%.*s_%s%s",
+            base_length,
+            filename,
+            filter_name,
+            extension
+        );
+    }
+    else{
+        result = snprintf(
+            output_filename,
+            sizeof(output_filename),
+            "%s_%s",
+            filename,
+            filter_name
+        );
+    }
+
+    if(result < 0 || result >= (int)sizeof(output_filename)){
+        printf("Output filename is too long!\n");
+        return 0;
+    }
+
+    if(!image_save_png(output, output_filename)){
+        printf("Failed to save %s output!\n", filter_name);
+        return 0;
+    }
+
+    printf("Output saved to: %s\n", output_filename);
+
+    return 1;
+}
+
+
 int main(int argc, char* argv[]){
     if(argc < 4 || argc > 5){
         printf("Usage: image_processor <input> <output> <filter> [threshold]\n");
-        printf("Filters: grayscale, threshold, otsu\n");
+        printf("Filters: grayscale, threshold, otsu, all\n");
+        return 1;
+    }
+
+    if(strcmp(argv[3], "all") == 0 && argc != 4){
+        printf("The all option does not accept a threshold value.\n");
         return 1;
     }
 
@@ -100,12 +167,69 @@ int main(int argc, char* argv[]){
             );
         }
     }
+    else if(strcmp(argv[3], "all") == 0){
+        int grayscale_correct = benchmark_grayscale(
+            &input,
+            &sequential_output,
+            &parallel_output,
+            10
+        );
+
+        int grayscale_saved = 0;
+
+        if(grayscale_correct){
+            grayscale_saved = save_all_output(
+                &parallel_output,
+                argv[2],
+                "grayscale"
+            );
+        }
+
+        int threshold_correct = benchmark_threshold(
+            &input,
+            &sequential_output,
+            &parallel_output,
+            10,
+            128
+        );
+
+        int threshold_saved = 0;
+
+        if(threshold_correct){
+            threshold_saved = save_all_output(
+                &parallel_output,
+                argv[2],
+                "threshold"
+            );
+        }
+
+        int otsu_correct = benchmark_otsu(
+            &input,
+            &sequential_output,
+            &parallel_output,
+            10
+        );
+
+        int otsu_saved = 0;
+
+        if(otsu_correct){
+            otsu_saved = save_all_output(
+                &parallel_output,
+                argv[2],
+                "otsu"
+            );
+        }
+
+        correct = grayscale_correct && grayscale_saved &&
+                  threshold_correct && threshold_saved &&
+                  otsu_correct && otsu_saved;
+    }
     else{
         printf("Unknown filter: %s\n", argv[3]);
-        printf("Available filters: grayscale, threshold, otsu\n");
+        printf("Available filters: grayscale, threshold, otsu, all\n");
     }
 
-    if(correct){
+    if(correct && strcmp(argv[3], "all") != 0){
         if(!image_save_png(&parallel_output, argv[2])){
             correct = 0;
         }
@@ -116,10 +240,10 @@ int main(int argc, char* argv[]){
     image_free(&input);
 
     if(correct){
-        printf("Image processing completed successfully!\n");
+        printf("\nImage processing completed successfully!\n");
         return 0;
     }
 
-    printf("Image processing failed!\n");
+    printf("\nImage processing failed!\n");
     return 1;
 }
