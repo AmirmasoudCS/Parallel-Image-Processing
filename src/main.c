@@ -9,7 +9,65 @@
 #define BENCHMARK_RUNS 50
 #define DEFAULT_THRESHOLD 128
 
-/* save_all_output(...) unchanged from your current file */
+static int save_all_output(
+    const Image* output,
+    const char* filename,
+    const char* filter_name
+){
+    char output_filename[1024];
+
+    const char* extension = strrchr(filename, '.');
+    const char* separator = strrchr(filename, '/');
+    const char* windows_separator = strrchr(filename, '\\');
+
+    if(windows_separator != NULL &&
+       (separator == NULL || windows_separator > separator)){
+        separator = windows_separator;
+    }
+
+    if(extension != NULL && separator != NULL && extension < separator){
+        extension = NULL;
+    }
+
+    int result;
+
+    if(extension != NULL){
+        int base_length = (int)(extension - filename);
+
+        result = snprintf(
+            output_filename,
+            sizeof(output_filename),
+            "%.*s_%s%s",
+            base_length,
+            filename,
+            filter_name,
+            extension
+        );
+    }
+    else{
+        result = snprintf(
+            output_filename,
+            sizeof(output_filename),
+            "%s_%s",
+            filename,
+            filter_name
+        );
+    }
+
+    if(result < 0 || result >= (int)sizeof(output_filename)){
+        printf("Output filename is too long!\n");
+        return 0;
+    }
+
+    if(!image_save_png(output, output_filename)){
+        printf("Failed to save %s output!\n", filter_name);
+        return 0;
+    }
+
+    printf("Output saved to: %s\n", output_filename);
+
+    return 1;
+}
 
 typedef struct{
     int benchmark;
