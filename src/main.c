@@ -105,17 +105,29 @@ static int run_filter(const Options* opt, const char* filter,
         return 0;
     }
 
+    int is_otsu = strcmp(filter, "otsu") == 0;
+    int otsu_value = 0;
+    int ok = 0;
+
+    double start = omp_get_wtime();
+
     if(strcmp(filter, "grayscale") == 0)
-        return grayscale_parallel(input, parallel);
-    if(strcmp(filter, "threshold") == 0)
-        return threshold_parallel(input, parallel, threshold);
-    if(strcmp(filter, "otsu") == 0){
-        int otsu_value = 0;
-        int ok = otsu_parallel(input, parallel, &otsu_value);
-        if(ok) printf("Otsu threshold: %d\n", otsu_value);
-        return ok;
+        ok = grayscale_parallel(input, parallel);
+    else if(strcmp(filter, "threshold") == 0)
+        ok = threshold_parallel(input, parallel, threshold);
+    else if(is_otsu)
+        ok = otsu_parallel(input, parallel, &otsu_value);
+
+    double elapsed = omp_get_wtime() - start;
+
+    if(ok){
+        if(is_otsu)
+            printf("Otsu threshold: %d\n", otsu_value);
+        printf("%s processed in %.3f ms (%d threads)\n",
+               filter, elapsed * 1000.0, omp_get_max_threads());
     }
-    return 0;
+
+    return ok;
 }
 
 int main(int argc, char* argv[]){
